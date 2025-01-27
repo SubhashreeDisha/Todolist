@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="/styles" />
+  </head>
+  <body>
+    <div class="todo-container">
+      <h1>To-Do List</h1>
+      <form id="form">
+        <input
+          type="text"
+          id="input"
+          placeholder="Add a new task..."
+          required
+        />
+        <button type="submit" id="add">Add</button>
+      </form>
+      <ul class="todo-list"></ul>
+    </div>
+  </body>
+  <script>
+    let Input = document.querySelector("#input");
+    let Form = document.querySelector("#form");
+    let Add = document.querySelector("#add");
+
+    //when we reload a page bydefault it will call the data present imn the backend an display it in the browser;
+    getdata().then((data) => {
+      display(data);
+    });
+
+    Form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (Add.innerText == "Add") {
+        try {
+          let data = {
+            input: Input.value,
+            id: Math.trunc(Math.random() * 10000),
+            isEdit: false,
+          };
+          let res = await fetch("/AddTodo", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          Input.value = "";
+          let displaydata = await getdata(); //here data is called from backened
+          display(displaydata); //here the data called from backened is passed to display fun to display .
+        } catch (error) {
+          console.log(error);
+        }
+      } else {
+        try {
+          let res = await fetch("/savesetData", {
+            method: "PATCH",
+            headers: { "context-text": "application/json" },
+            body: JSON.stringify({ UpdatedInputValue: Input.value }),
+          });
+          let data = await res.json();
+          display(data);
+          Input.value = "";
+          Add.innerText = "Add";
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    });
+    async function getdata() {
+      try {
+        let res = await fetch("/gettodo");
+        let data = await res.json();
+        return data;
+      } catch (error) {
+        console.log(error);
+        return error;
+      }
+    }
+    let display1 = document.querySelector(".todo-list");
+
+    function display(data) {
+      let html = "";
+      data.forEach((value) => {
+        html += ` <li>
+         ${value.input}
+         <div>
+          <button class="Edit-btn" data-id=${value.id} >Edit</button>
+          <button class="delete-btn" data-id=${value.id} >Delete</button>
+          </div>
+        </li>`;
+      });
+      display1.innerHTML = html;
+    }
+    console.log(document.querySelector(".delete-btn"));
+
+    //event delegation (ul has static so here we had  add the event handler)
+    display1.addEventListener("click", async (e) => {
+      // console.log(e.target.classList, e.target.dataset);
+      if (e.target.classList.contains("delete-btn")) {
+        // console.log("hello");
+        try {
+          let res = await fetch("/dltsetData", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: e.target.dataset.id }),
+          });
+          let data = await res.json();
+          console.log(data);
+          display(data);
+        } catch (error) {
+          console.log(error);
+        }
+      } else if (e.target.classList.contains("Edit-btn")) {
+        try {
+          let res = await fetch("/editsetData", {
+            method: "PATCH",
+            headers: { "content-text": "application/json" },
+            body: JSON.stringify({ id: e.target.dataset.id }),
+          });
+          let data = await res.json();
+          console.log(data);
+          data.forEach((value) => {
+            if (value.isEdit) {
+              Input.value = value.input;
+            }
+          });
+          Add.innerText = "save";
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    });
+  </script>
+</html>
