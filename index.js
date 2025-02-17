@@ -78,5 +78,5 @@ const server = http.createServer((req, res) => {
   }
 });
 server.listen(5000,() => {
-  console.log("http://localhost:5000");
+  console.log("running on port no 5000");
 });
